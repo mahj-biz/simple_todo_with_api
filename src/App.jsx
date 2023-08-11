@@ -1,53 +1,115 @@
-import { useState } from 'react'
+import { useState,useEffect } from 'react'
 import './App.css'
 import 'bootstrap/dist/css/bootstrap.min.css';
 import FormModal from './components/FormModal'
+import { createClient } from '@supabase/supabase-js'
 
-const initialTodos = [
-  { id: 1, text: 'Learn VSCode', completed: true, points: 2, user: {id: 1, name: 'Abu'} },
-  { id: 2, text: 'Learn Css', completed: true, points: 5, user: {id: 2, name: 'Ali'} },
-  { id: 3, text: 'Learn HTML', completed: true, points: 7, user: {id: 1, name: 'Abu'} },
-  { id: 4, text: 'Learn Bootstrap', completed: true, points: 2, user: {id: 2, name: 'Ali'} },
-  { id: 5, text: 'Learn Git', completed: true, points: 10, user: {id: 1, name: 'Abu'} },
-  { id: 6, text: 'Learn Databse', completed: true, points: 1, user: {id: 1, name: 'Abu'} },
-  { id: 7, text: 'Learn Tailwind', completed: true, points: 3, user: {id: 2, name: 'Ali'} },
-  { id: 8, text: 'Learn SQL', completed: true, points: 6, user: {id: 1, name: 'Abu'} },
-]
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseKey = import.meta.env.VITE_SUPABASE_KEY
+const supabase = createClient(supabaseUrl, supabaseKey)
 
+// const initialTodos = [
+//   { id: 1, text: 'Learn VSCode', completed: true, points: 2, user: {id: 1, name: 'Abu'} },
+//   { id: 2, text: 'Learn Css', completed: true, points: 5, user: {id: 2, name: 'Ali'} },
+//   { id: 3, text: 'Learn HTML', completed: true, points: 7, user: {id: 1, name: 'Abu'} },
+//   { id: 4, text: 'Learn Bootstrap', completed: true, points: 2, user: {id: 2, name: 'Ali'} },
+//   { id: 5, text: 'Learn Git', completed: true, points: 10, user: {id: 1, name: 'Abu'} },
+//   { id: 6, text: 'Learn Databse', completed: true, points: 1, user: {id: 1, name: 'Abu'} },
+//   { id: 7, text: 'Learn Tailwind', completed: true, points: 3, user: {id: 2, name: 'Ali'} },
+//   { id: 8, text: 'Learn SQL', completed: true, points: 6, user: {id: 1, name: 'Abu'} },
+// ]
+
+// const defaultTodo = {
+//   id: '',
+//   text: '',
+//   points: '',
+//   user: ''
+// }
 const defaultTodo = {
-  id: '',
   text: '',
-  points: '',
-  user: ''
+  points: ''
 }
 
+
 function App() {
-  const [todos, setTodos] = useState(initialTodos)
+  //const [todos, setTodos] = useState(initialTodos)
+  const [todos, setTodos] = useState([])
   const [todoEdit, setTodoEdit] = useState(defaultTodo)
   const [showModal, setShowModal] = useState(false)
 
-  const handleToggleCompleted = (id) => {
-    const newTodos = todos.map((todo) => {
-      if(todo.id === id){
-        return {...todo, completed: !todo.completed}
-      }
-      return todo
-    })
-    setTodos(newTodos)
+const fetchToDos = async () => {
+  
+  let { data, error } = await supabase
+  .from('todos')
+  .select('*');
+  // let { data, error } = await supabase
+  // .from('todos')
+  // .select(`
+  //   *,
+  //   users (
+  //     user_id
+  //   )
+  // `)
+
+  setTodos([...data]);
+  //console.log(data);
+
+}
+
+  useEffect(()=>{
+    fetchToDos()
+  },[])
+
+  const handleToggleCompleted = async (id,completed) => {
+   
+    const { data, error } = await supabase
+    .from('todos')
+    .update({'completed': !completed})
+    .eq('id', id)
+    .select()
+    
+    fetchToDos()
+    // const newTodos = todos.map((todo) => {
+    //   if(todo.id === id){
+    //     return {...todo, completed: !todo.completed}
+    //   }
+    //   return todo
+    // })
+    // setTodos(newTodos)
   }
 
-  const onSubmitForm = (newTodo) => {
+  const onSubmitForm = async (newTodo) => {
     if(newTodo.id){
+      //update
+      const { data, error } = await supabase
+      .from('todos')
+      .update(newTodo)
+      .eq('id', newTodo.id)
+      .select()
+
+      //console.log(data)
+
       const newTodos = todos.map((todo) => {
         if(todo.id === newTodo.id){
-          return newTodo
+          return data[0]
         }
         return todo
       })
+
       setTodos(newTodos)
+
     }else{
-      const newTodos = [...todos, {...newTodo, id: todos.length + 1}]
-      setTodos(newTodos)
+      
+      //create
+      const { data, error } = await supabase
+      .from('todos')
+      .insert([newTodo])
+      .select()
+
+      //console.log(data);
+      //const newTodos = [...todos, {...newTodo, id: todos.length + 1}]
+
+      setTodos([...todos,data[0]])
     }
   }
 
@@ -59,6 +121,27 @@ function App() {
   const onCloseModal = () => {
     setTodoEdit(null)
     setShowModal(false)
+  }
+
+  const onDelete = async (todo) => {
+            
+      const { error } = await supabase
+        .from('todos')
+        .delete()
+        .eq('id', todo.id)
+
+        // debugger
+        
+        // const newTodos = todos.map((curTodo) => {
+        //   if(curTodo.id === todo.id){
+        //     return 
+        //   }
+        //   return curTodo
+        // })
+        
+        // setTodos(newTodos)
+
+        fetchToDos()
   }
 
   return (
@@ -74,7 +157,7 @@ function App() {
                   <li key={todo.id} className="list-group-item">
                     <div className="row">
                       <div className="col-2">
-                        <input type="checkbox" defaultChecked={todo.completed} onChange={() => handleToggleCompleted(todo.id)}/>
+                        <input type="checkbox" defaultChecked={todo.completed} onChange={() => handleToggleCompleted(todo.id,todo.completed)}/>
                       </div>
                       <div className="col-10">
                         <div>
@@ -82,6 +165,7 @@ function App() {
                           <span className="mx-2 badge bg-primary">{todo.points}</span>
                           <span className="badge bg-secondary">{todo?.user?.name}</span>
                           <span className='mx-2 text-primary' onClick={()=> {toggleEdit(todo)}}>edit</span>
+                          <span className='mx-2 text-danger' onClick={()=> {onDelete(todo)}}>delete</span>
                         </div>
                       </div>
                     </div>
