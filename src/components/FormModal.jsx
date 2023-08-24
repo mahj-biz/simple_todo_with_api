@@ -80,7 +80,7 @@ function FormModal({todo, onCloseModal, onSubmitForm, showModal}) {
             </div>
             <div className="mb-3">
               <label htmlFor="user" className="form-label">User</label>
-              <select className="form-select" id="user">
+              <select className="form-select" id="user" defaultValue={todo?.users?.id} onChange={(e) => onChangeInput(e, 'user_id')}>
                 {/* <option value="1">Abu</option>
                 <option value="2">Ali</option> */}
                 {users.map((user) => (

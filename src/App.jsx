@@ -19,16 +19,16 @@ const supabase = createClient(supabaseUrl, supabaseKey)
 //   { id: 8, text: 'Learn SQL', completed: true, points: 6, user: {id: 1, name: 'Abu'} },
 // ]
 
-// const defaultTodo = {
-//   id: '',
-//   text: '',
-//   points: '',
-//   user: ''
-// }
 const defaultTodo = {
+  id: '',
   text: '',
-  points: ''
+  points: '',
+  user_id: ''
 }
+// const defaultTodo = {
+//   text: '',
+//   points: ''
+// }
 
 
 function App() {
@@ -39,9 +39,10 @@ function App() {
 
 const fetchToDos = async () => {
   
-  let { data, error } = await supabase
-  .from('todos')
-  .select('*');
+  // let { data, error } = await supabase
+  // .from('todo_items')
+  // .select('*');
+
   // let { data, error } = await supabase
   // .from('todos')
   // .select(`
@@ -50,6 +51,17 @@ const fetchToDos = async () => {
   //     user_id
   //   )
   // `)
+
+  let { data, error } = await supabase
+  .from('todo_items').select(`
+  id, 
+  text,
+  completed,
+  points,
+  users ( id, name )
+`)
+
+  //console.log(data);
 
   setTodos([...data]);
   //console.log(data);
@@ -79,15 +91,28 @@ const fetchToDos = async () => {
   }
 
   const onSubmitForm = async (newTodo) => {
+    debugger
     if(newTodo.id){
       //update
+      // const { data, error } = await supabase
+      // .from('todos')
+      // .update(newTodo)
+      // .eq('id', newTodo.id)
+      // .select()
+
+      // const { data, error } = await supabase
+      // .from('todos')
+      // .update({ text: newTodo.text ,completed: newTodo.completed ,points: newTodo.points ,user_id: newTodo.user_id })
+      // .eq('id', newTodo.id)
+      // .select()
+
       const { data, error } = await supabase
       .from('todos')
-      .update(newTodo)
+      .update({ user_id: newTodo.user_id })
       .eq('id', newTodo.id)
       .select()
-
-      //console.log(data)
+      
+      console.log(data)
 
       const newTodos = todos.map((todo) => {
         if(todo.id === newTodo.id){
@@ -163,7 +188,7 @@ const fetchToDos = async () => {
                         <div>
                           {todo.text}
                           <span className="mx-2 badge bg-primary">{todo.points}</span>
-                          <span className="badge bg-secondary">{todo?.user?.name}</span>
+                          <span className="badge bg-secondary">{todo?.users?.name}</span>
                           <span className='mx-2 text-primary' onClick={()=> {toggleEdit(todo)}}>edit</span>
                           <span className='mx-2 text-danger' onClick={()=> {onDelete(todo)}}>delete</span>
                         </div>
